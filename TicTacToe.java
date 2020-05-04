@@ -13,8 +13,12 @@ public class TicTacToe {
                 {"|", " ", "4", " | ", "5", " | ", "6", " ", "|"}, {"+", "-", "-", "-+-", "-", "-+-", "-", "-", "+"},
                 {"|", " ", "7", " | ", "8", " | ", "9", " ", "|"}, {"+", "-", "-", "-+-", "-", "-+-", "-", "-", "+"}, };
         int[][] boardPos = {{0, 0}, {1, 2}, {1, 4}, {1, 6}, {3, 2}, {3, 4}, {3, 6}, {5, 2}, {5, 4}, {5, 6}};
-        char[] boardStatus = new char[10];
-        for(int i=1;i<10;i++) boardStatus[i] = (char)(48);
+        boolean[] playerList = new boolean[10];
+        boolean[] cpuList = new boolean[10];
+        for (int i = 1; i < 10; i++) {
+            playerList[i] = false;
+            cpuList[i] = false;
+        }
         
         // Game Title
         clrscr();
@@ -24,17 +28,48 @@ public class TicTacToe {
         
         String player = chooseHuman();
         String cpu = (player == "X") ? "O"  : "X";
+        boolean finish = false;
+        int turn = 0;
         if(player == "O"){
             printBoard(gameBoard);
-            choosePos(gameBoard, boardPos, player, "player");
-            printBoard(gameBoard);
-            choosePos(gameBoard, boardPos, cpu, "cpu");
-        }else{
-            choosePos(gameBoard, boardPos, cpu, "cpu");
-            printBoard(gameBoard);
-            choosePos(gameBoard, boardPos, player, "player");
+            while (!finish && turn < 9){
+                choosePos(gameBoard, boardPos, player, playerList, "player");
+                printBoard(gameBoard);
+                turn++;
+                finish = checkWinning(playerList);
+                if(finish) {
+                    System.out.println("   Congratulations! You Won!");
+                    continue;
+                }
+                if(turn < 9) {
+                    choosePos(gameBoard, boardPos, cpu, cpuList, "cpu");
+                    printBoard(gameBoard);
+                    turn++;
+                    finish = checkWinning(cpuList);
+                    if(finish) System.out.println("      Sorry, you lost :(");
+                }
+            }
+        }else{ 
+            while (!finish && turn < 9){
+                choosePos(gameBoard, boardPos, cpu, cpuList, "cpu");
+                printBoard(gameBoard);
+                turn++;
+                finish = checkWinning(cpuList);
+                
+                if(finish) {
+                    if(finish) System.out.println("      Sorry, you lost :(");
+                    continue;
+                }
+                if(turn < 9) {
+                    choosePos(gameBoard, boardPos, player, playerList, "player");
+                    printBoard(gameBoard);
+                    turn++;
+                    finish = checkWinning(playerList);
+                    if(finish) System.out.println("   Congratulations! You Won!");
+                }
+            }
         }
-        printBoard(gameBoard);
+        if(!finish) System.out.println("            Draw!");
     }
 
     public static void clrscr() {
@@ -80,9 +115,9 @@ public class TicTacToe {
         return res;
     }
 
-    public static void choosePos(String[][] gameBoard, int[][] boardPos, String sign, String player) {
+    public static void choosePos(String[][] gameBoard, int[][] boardPos, String sign, boolean[] list, String player) {
         String slot;
-        int pos;   
+        int pos=0;   
 
         if(player == "player"){
             System.out.println("          Your turn");
@@ -98,6 +133,7 @@ public class TicTacToe {
                 slot = gameBoard[boardPos[pos][0]][boardPos[pos][1]];
                 if(slot=="O" || slot=="X") System.out.println("Position occupied, choose other position!");
             }while(slot=="O" || slot=="X");
+            
         }else{
             Random rand = new Random();
             do{
@@ -108,7 +144,18 @@ public class TicTacToe {
             }while(slot=="O" || slot=="X");
             System.out.println("          CPU turn");
         }
-        
+        list[pos]  = true;
         gameBoard[boardPos[pos][0]][boardPos[pos][1]] = sign;
+    }
+    public static boolean checkWinning(boolean[] list) {
+        boolean result = false;
+        int[][] win = {{1,2,3}, {4,5,6}, {7,8,9}, {1,4,7}, {2,5,8}, {3,6,9}, {1,5,9}, {3,5,7}} ;
+        
+        for(int[] row: win){
+            if(list[row[0]] && list[row[1]] && list[row[2]]) result = true;
+            if(result) break;
+        }
+
+        return result;
     }
 }
