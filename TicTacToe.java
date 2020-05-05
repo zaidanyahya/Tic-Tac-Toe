@@ -30,11 +30,11 @@ public class TicTacToe {
         String player = chooseHuman();
         String cpu = (player == "X") ? "O"  : "X";
         boolean finish = false;
-        int turn = 0;
+        int turn = 1;
         if(player == "O"){
             printBoard(gameBoard);
-            while (!finish && turn < 9){
-                choosePos(gameBoard, boardPos, player, playerList, "player");
+            while (!finish && turn <= 9){
+                choosePos(gameBoard, boardPos, turn, player, playerList, "player");
                 printBoard(gameBoard);
                 turn++;
                 finish = checkWinning("player");
@@ -42,8 +42,8 @@ public class TicTacToe {
                     System.out.println("   Congratulations! You Won!");
                     continue;
                 }
-                if(turn < 9) {
-                    choosePos(gameBoard, boardPos, cpu, cpuList, "cpu");
+                if(turn <= 9) {
+                    choosePos(gameBoard, boardPos, turn, cpu, cpuList, "cpu");
                     printBoard(gameBoard);
                     turn++;
                     finish = checkWinning("cpu");
@@ -51,8 +51,8 @@ public class TicTacToe {
                 }
             }
         }else{ 
-            while (!finish && turn < 9){
-                choosePos(gameBoard, boardPos, cpu, cpuList, "cpu");
+            while (!finish && turn <= 9){
+                choosePos(gameBoard, boardPos, turn, cpu, cpuList, "cpu");
                 printBoard(gameBoard);
                 turn++;
                 finish = checkWinning("cpu");
@@ -62,7 +62,7 @@ public class TicTacToe {
                     continue;
                 }
                 if(turn < 9) {
-                    choosePos(gameBoard, boardPos, player, playerList, "player");
+                    choosePos(gameBoard, boardPos, turn, player, playerList, "player");
                     printBoard(gameBoard);
                     turn++;
                     finish = checkWinning("player");
@@ -116,7 +116,26 @@ public class TicTacToe {
         return res;
     }
 
-    public static void choosePos(String[][] gameBoard, int[][] boardPos, String sign, boolean[] list, String player) {
+    public static void makeMove(String[][] gameBoard, int[][] boardPos, String player, String sign, int pos){
+        if(player == "player"){
+            playerList[pos] = true;
+        }else{ 
+            cpuList[pos] = true;
+        }
+
+        gameBoard[boardPos[pos][0]][boardPos[pos][1]] = sign;
+    }
+
+    public static void clearMove(String[][] gameBoard, int[][] boardPos, String player, String sign, int pos){
+        if(player == "player"){
+            playerList[pos] = false;
+        }else{ 
+            cpuList[pos] = false;
+        }
+        gameBoard[boardPos[pos][0]][boardPos[pos][1]] = "" + (char) (48+pos);   
+    }
+
+    public static void choosePos(String[][] gameBoard, int[][] boardPos, int turn, String sign, boolean[] list, String player) {
         String slot;
         int pos=0;   
 
@@ -136,18 +155,12 @@ public class TicTacToe {
             }while(slot=="O" || slot=="X");
             
         }else{
-            Random rand = new Random();
-            do{
-                do{
-                    pos = rand.nextInt(9) + 1;
-                }while(pos < 1 || pos > 9);
-                slot = gameBoard[boardPos[pos][0]][boardPos[pos][1]];
-            }while(slot=="O" || slot=="X");
+            pos = cpuTurn(gameBoard, boardPos, turn, sign);
             System.out.println("          CPU turn");
         }
-        list[pos]  = true;
-        gameBoard[boardPos[pos][0]][boardPos[pos][1]] = sign;
+        makeMove(gameBoard, boardPos, player, sign, pos);
     }
+
     public static boolean checkWinning(String player) {
         boolean result = false;
         int[][] win = {{1,2,3}, {4,5,6}, {7,8,9}, {1,4,7}, {2,5,8}, {3,6,9}, {1,5,9}, {3,5,7}} ;
@@ -160,5 +173,74 @@ public class TicTacToe {
         }
 
         return result;
+    }
+
+    public static int cpuTurn(String[][] gameBoard, int[][] boardPos, int turn, String sign){
+        double bestScore = Double.NEGATIVE_INFINITY;   
+        int move = 0;
+        String slot;
+
+        for (int i = 1; i < 10; i++) {
+            slot = gameBoard[boardPos[i][0]][boardPos[i][1]];
+            if(slot!="O" && slot!="X"){
+                int score;
+                makeMove(gameBoard, boardPos, "cpu", sign, i);
+                String nextSign = (sign=="O") ? "X" : "O";
+                score = bestMove(gameBoard, boardPos, turn, "player", nextSign, false);
+                clearMove(gameBoard, boardPos, "cpu", sign, i);
+                if(score > bestScore) {
+                    bestScore = score;
+                    move = i;
+                }
+            }
+        }
+
+        return move;
+    }
+
+    public static int bestMove(String[][] gameBoard, int[][] boardPos, int turn, String player, String sign, boolean maxi){
+        int score;
+        String slot;
+
+        boolean humanWin = checkWinning("player");
+        boolean cpuWin = checkWinning("cpu");
+
+        if(cpuWin){
+            return 1;
+        }else if(humanWin){
+            return -1;
+        }else if(turn == 9){
+            return 0;
+        }
+
+        if(maxi){
+            double bestScore = Double.NEGATIVE_INFINITY;
+            for (int i = 1; i < 10; i++) {
+                slot = gameBoard[boardPos[i][0]][boardPos[i][1]];
+                if(slot!="O" && slot!="X"){
+                    makeMove(gameBoard, boardPos, player, sign, i);
+                    String nextSign = (sign=="O") ? "X" : "O";
+                    score = bestMove(gameBoard, boardPos, turn+1, "player", sign, false);
+                    if(score > bestScore) {
+                        bestScore = score;
+                    }
+                    clearMove(gameBoard, boardPos, player, sign, i);
+                }
+            }return (int) bestScore;
+        }else{
+            double bestScore = Double.POSITIVE_INFINITY;
+            for (int i = 1; i < 10; i++) {
+                slot = gameBoard[boardPos[i][0]][boardPos[i][1]];
+                if(slot!="O" && slot!="X"){
+                    makeMove(gameBoard, boardPos, player, sign, i);
+                    String nextSign = (sign=="O") ? "X" : "O";
+                    score = bestMove(gameBoard, boardPos, turn+1, "cpu", sign, true);
+                    if(score < bestScore) {
+                        bestScore = score;
+                    }
+                    clearMove(gameBoard, boardPos, player, sign, i);
+                }
+            }return (int) bestScore;
+        }
     }
 }
